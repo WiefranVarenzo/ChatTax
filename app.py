@@ -20,7 +20,7 @@ with st.sidebar:
     st.subheader("🔗 Konfigurasi API")
     API_URL = st.text_input(
         "Masukkan API URL dari Colab (Ngrok):",
-        value="https://452ca061f68e.ngrok-free.app/ask", 
+        value="https://976eda16e6b1.ngrok-free.app/ask", 
         help="Salin URL dari output Colab yang berformat https://xxxx.ngrok-free.app/ask"
     )
     st.caption("⚠️ Ganti setiap runtime Colab")
