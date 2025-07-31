@@ -1,31 +1,18 @@
 import streamlit as st
 import requests
 import uuid
-from streamlit.components.v1 import html
 
 # =============================================
+# Konfigurasi Halaman
 # Konfigurasi Halaman & Inisialisasi State
 # =============================================
+st.set_page_config(page_title="💬 Chatbot Pajak", page_icon="💬", layout="centered")
 st.set_page_config(page_title="Chatbot Pajak Pro", page_icon="🤖", layout="wide")
 
-maze_snippet = """
-<script>
-(function (m, a, z, e) {
-  var s, t;
-  try { t = m.sessionStorage.getItem('maze-us'); } catch (err) {}
-  if (!t) { t = new Date().getTime(); try { m.sessionStorage.setItem('maze-us', t); } catch (err) {} }
-  s = a.createElement('script');
-  s.src = z + '?apiKey=' + e;
-  s.async = true;
-  a.getElementsByTagName('head')[0].appendChild(s);
-  m.mazeUniversalSnippetApiKey = e;
-})(window, document, 'https://snippet.maze.co/maze-universal-loader.js', 'd58d794c-587e-4b4e-b2c6-9a7b77399290');
-</script>
-"""
-
-# Masukkan snippet ke halaman
-html(maze_snippet, height=0, width=0)
-
+st.markdown("""
+# 💬 Chatbot Pajak
+Tanyakan apa pun tentang perpajakan Indonesia berdasarkan dokumen yang telah diolah.
+""")
 # Inisialisasi semua state yang dibutuhkan untuk sesi pengguna
 def init_session_state():
     """Inisialisasi session state jika belum ada."""
@@ -40,11 +27,21 @@ def init_session_state():
     if "active_api_url" not in st.session_state:
         st.session_state.active_api_url = None
 
+st.divider()
 init_session_state()
 
 # =============================================
+# Input URL API Colab
 # Fungsi untuk Berinteraksi dengan API Backend
 # =============================================
+with st.sidebar:
+    st.subheader("🔗 Konfigurasi API")
+    API_URL = st.text_input(
+        "Masukkan API URL dari Colab (Ngrok):",
+        value="https://976eda16e6b1.ngrok-free.app/ask", 
+        help="Salin URL dari output Colab yang berformat https://xxxx.ngrok-free.app/ask"
+    )
+    st.caption("⚠️ Ganti setiap runtime Colab")
 def api_request(method, endpoint, json_data=None):
     """Fungsi terpusat untuk semua permintaan ke API backend."""
     if not st.session_state.active_api_url:
@@ -78,8 +75,11 @@ def refresh_conversations():
         st.session_state.conversations = api_request("get", "conversations") or []
 
 # =============================================
+# Simpan history percakapan di session_state
 # Tampilan Sidebar (Menu Utama)
 # =============================================
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 with st.sidebar:
     st.title("Menu Chatbot")
     
@@ -161,6 +161,7 @@ with st.sidebar:
                         st.success("Registrasi berhasil! Silakan login.")
 
 # =============================================
+# Tampilkan history chat seperti UI GPT
 # Tampilan Utama (Area Chat)
 # =============================================
 st.title("🤖 Chatbot Pajak Profesional")
@@ -180,6 +181,10 @@ for msg in st.session_state.messages:
                 api_request("post", "feedback", {"message_id": msg['id'], "rating": -1})
                 st.toast("Terima kasih atas feedback Anda!", icon="✅")
 
+# =============================================
+# Input pertanyaan user
+# =============================================
+prompt = st.chat_input("Tulis pertanyaan pajakmu di sini...")
 # Input chat dari pengguna
 if prompt := st.chat_input("Tulis pertanyaan Anda...", disabled=not st.session_state.active_api_url):
     
@@ -188,34 +193,3 @@ if prompt := st.chat_input("Tulis pertanyaan Anda...", disabled=not st.session_s
     temp_user_id = f"user_{uuid.uuid4()}"
     st.session_state.messages.append({"role": "user", "content": prompt, "id": temp_user_id})
     st.rerun()
-
-# Logika untuk memproses pesan terakhir dari pengguna
-# Cek jika pesan terakhir adalah dari 'user' dan belum diproses
-last_message = st.session_state.messages[-1] if st.session_state.messages else None
-if last_message and last_message["role"] == "user" and last_message["id"].startswith("user_"):
-    
-    # Hapus ID sementara dari pesan pengguna
-    last_message.pop("id", None)
-    
-    with st.chat_message("assistant"):
-        with st.spinner("🤖 AI sedang berpikir..."):
-            payload = {
-                "question": last_message["content"],
-                "conversation_id": st.session_state.current_conversation_id
-            }
-            
-            response = api_request("post", "ask", payload) 
-            
-            if response:
-                # Jika pengguna login, muat ulang seluruh percakapan dari DB
-                if st.session_state.token:
-                    st.session_state.current_conversation_id = response["conversation_id"]
-                    st.session_state.messages = api_request("get", f"conversations/{response['conversation_id']}") or []
-                    refresh_conversations() # Refresh daftar convo jika ini percakapan baru
-                else: 
-                    # Jika pengguna adalah tamu, tambahkan jawaban AI secara lokal
-                    temp_assistant_id = f"assistant_{uuid.uuid4()}"
-                    st.session_state.messages.append({"role": "assistant", "content": response["answer"], "id": temp_assistant_id})
-                
-                # Tampilkan ulang halaman untuk memperbarui chat
-                st.rerun()
