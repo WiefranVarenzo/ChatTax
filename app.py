@@ -1,11 +1,30 @@
 import streamlit as st
 import requests
 import uuid
+from streamlit.components.v1 import html
 
 # =============================================
 # Konfigurasi Halaman & Inisialisasi State
 # =============================================
 st.set_page_config(page_title="Chatbot Pajak Pro", page_icon="🤖", layout="wide")
+
+maze_snippet = """
+<script>
+(function (m, a, z, e) {
+  var s, t;
+  try { t = m.sessionStorage.getItem('maze-us'); } catch (err) {}
+  if (!t) { t = new Date().getTime(); try { m.sessionStorage.setItem('maze-us', t); } catch (err) {} }
+  s = a.createElement('script');
+  s.src = z + '?apiKey=' + e;
+  s.async = true;
+  a.getElementsByTagName('head')[0].appendChild(s);
+  m.mazeUniversalSnippetApiKey = e;
+})(window, document, 'https://snippet.maze.co/maze-universal-loader.js', 'd58d794c-587e-4b4e-b2c6-9a7b77399290');
+</script>
+"""
+
+# Masukkan snippet ke halaman
+html(maze_snippet, height=0, width=0)
 
 # Inisialisasi semua state yang dibutuhkan untuk sesi pengguna
 def init_session_state():
